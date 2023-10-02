@@ -169,6 +169,9 @@ class ProbabilisticLanguageModel():
             _type_: _description_
         """
         assert not (interpolation and backoff), "interpolation and backoff can't be True at the same time"
+        
+        if not interpolation and not backoff:
+            assert n_choose <= self.max_ngram, f"n_choose must be <= {self.max_ngram}"
 
         # Normalize weight
         if interpolation:
@@ -215,14 +218,12 @@ class ProbabilisticLanguageModel():
 
                 score *= backoff_score 
 
-            # single n-gram mode
-            else: 
-                if n_choose == 1:
-                    context = ()
-                assert n_choose <= self.max_ngram, "n_choose must be smaller than max_ngram"
-
-                context = tuple(ngram_list[str(n_choose)][i][:-1])
-                score *= self.score(token, context)
+        # single n-gram mode
+        if not interpolation and not backoff:
+            for element in ngram_list[str(n_choose)]:
+                context = element[:-1]
+                predict_word = element[-1]
+                score *= self.score(predict_word, context)
   
         return score
 
@@ -273,7 +274,7 @@ if __name__ == "__main__":
     print(f"Probability 'are' after context 'the books are': {lm.score('are', ('the', 'books', 'are'))}")
 
     print(f"Probability of sentence 'the books are books' with bigram: {lm.score_sentence('the books are books', n_choose=2)}")
-    print(f"Probability of sentence 'the books are books' with unigram: {lm.score_sentence('the books are books', n_choose=3)}")
+    print(f"Probability of sentence 'the books are books' with unigram: {lm.score_sentence('the books are books', n_choose=1)}")
     print(f"Probability of sentence 'the books are books' with interpolation: {lm.score_sentence('the books are books', interpolation=True, weight=[0.5, 0.3, 0.2])}")
 
     print(f"Vocabulary: {lm.vocab()}")
