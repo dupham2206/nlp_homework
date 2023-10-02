@@ -140,13 +140,13 @@ class ProbabilisticLanguageModel():
         """
         predict_word, context = self.preprocess_input(predict_word, context)
 
-        # If context not in training data, return 0
-        if context not in self.count:
-            return 0
-        
         # If predict_word not in vocabulary, return 0
-        if predict_word not in self.vocab_list:
+        if predict_word not in self.vocab_list and predict_word != '</s>' and predict_word != '<s>':
             return 0
+
+        # If context not in training data, return 1 / len_vocab = smoothing / (len_vocab * smoothing)
+        if context not in self.count:
+            return 1 / self.len_vocab if self.smoothing != 0.0 else 0
 
         # If predict_word not in context, return smoothing / (sum[context] + smoothing * len_vocab)
         if predict_word not in self.count[context]:
